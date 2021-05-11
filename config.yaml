@@ -1,0 +1,19 @@
+# Copyright 2021 lihuiguo
+# See LICENSE file for licensing details.
+#
+# TEMPLATE-TODO: change this example to suit your needs.
+# If you don't need a config, you can remove the file entirely.
+# It ties in to the example _on_config_changed handler in src/charm.py
+#
+# Learn more about config at: https://juju.is/docs/sdk/config
+
+options:
+  root-password:
+    default: "test"
+    description: The default root password of mariadb
+    type: string
+  # external_hostname:
+  #   type: string
+  #   description: >
+  #     External hostname (required).
+  #   default: 'foo.internal'

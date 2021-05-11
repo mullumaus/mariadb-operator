@@ -1,0 +1,27 @@
+# Copyright 2021 lihuiguo
+# See LICENSE file for licensing details.
+name: mariadb
+description: |
+  A Juju charm deploying and managing MariaDB on Kubernetes.
+summary: |
+  MariaDB is developed as open source software and as a 
+  relational database it provides an SQL interface for accessing data. 
+
+storage:
+  db:
+    type: filesystem
+    location: /data/db
+provides:
+  database:
+    interface: mysql
+containers:
+  mariadb:
+    resource: mariadb-image
+resources:
+  mariadb-image:
+    type: oci-image
+    description: OCI image for mariadb (kennethreitz/mariadb)
+
+# requires:
+#   ingress:
+#     interface: ingress

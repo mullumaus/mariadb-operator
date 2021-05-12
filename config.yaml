@@ -8,12 +8,7 @@
 # Learn more about config at: https://juju.is/docs/sdk/config
 
 options:
-  root-password:
-    default: "test"
-    description: The default root password of mariadb
-    type: string
-  # external_hostname:
-  #   type: string
-  #   description: >
-  #     External hostname (required).
-  #   default: 'foo.internal'
+  port:
+    description: The port mariadb will be listening on
+    type: int
+    default: 3306

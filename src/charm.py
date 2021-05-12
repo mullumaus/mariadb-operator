@@ -30,7 +30,7 @@ from mariadbserver import MariaDB, ROOT_USER, PORT
 from charmhelpers.core import host
 from charmhelpers.core.hookenv import (
     leader_set,
-    # is_leader,
+    leader_get,
 )
 # from charms.osm.k8s import is_pod_up, get_service_ip
 # from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
@@ -44,7 +44,6 @@ class MariadbCharm(CharmBase):
     """Charm the service."""
 
     _stored = StoredState()
-    _root_password = None
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -55,8 +54,7 @@ class MariadbCharm(CharmBase):
         self.framework.observe(self.on.restart_action, self._on_restart_action)
         self.framework.observe(self.on["database"].relation_changed,
                                self._on_database_relation_changed)
-        if self._root_password is None:
-            self._root_password = self._gen_root_password()
+            
         # self.ingress = IngressRequires(
         #     self,
         #     {
@@ -81,6 +79,7 @@ class MariadbCharm(CharmBase):
         """
         # Get a reference the container attribute on the PebbleReadyEvent
         container = event.workload
+        root_password = self._gen_root_password()
         # Define an initial Pebble layer configuration
         pebble_layer = {
             "summary": "mariadb layer",
@@ -92,12 +91,13 @@ class MariadbCharm(CharmBase):
                     "command": COMMAND,
                     "startup": "enabled",
                     "environment": {
-                            "MYSQL_ROOT_PASSWORD": self._root_password,
+                            "MYSQL_ROOT_PASSWORD": root_password,
                         },
                 }
             },
         }
-        leader_set({'root-password': self._root_password})
+        
+        leader_set({'root-password': root_password})
         # Add intial Pebble config layer using the Pebble API
         container.add_layer("mariadb", pebble_layer, combine=True)
         # Autostart any services that were defined with startup: enabled
@@ -126,7 +126,7 @@ class MariadbCharm(CharmBase):
         self._on_update_status(event)
 
     def _on_database_relation_changed(self,event):
-        event.relation.data[self.unit]['root-password'] = self.model.config['root-password']
+        event.relation.data[self.unit]['root-password'] = leader_get("root-password")
 
     def _gen_root_password(self):
         return host.pwgen(40)
@@ -155,7 +155,7 @@ class MariadbCharm(CharmBase):
             return {}
         
         ports = [
-            {"name": "mariadb", "containerPort": PORT, "protocol": "TCP"},
+            {"name": "mariadb", "containerPort": self.model.config['port'], "protocol": "TCP"},
         ]
 
         service_account = self._make_service_account()

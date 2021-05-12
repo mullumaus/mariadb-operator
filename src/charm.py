@@ -26,7 +26,6 @@ from ops.model import (
 )
 from ops.pebble import ServiceStatus, Layer
 from oci_image import OCIImageResource, OCIImageResourceError
-from mariadbserver import MariaDB, ROOT_USER, PORT
 from charmhelpers.core import host
 from charmhelpers.core.hookenv import (
     leader_set,
@@ -40,7 +39,6 @@ logger = logging.getLogger(__name__)
 
 SERVICE = "mariadb"
 COMMAND = "/usr/local/bin/docker-entrypoint.sh mysqld"
-
 
 class MariadbCharm(CharmBase):
     """A Juju Charm to deploy MariaDB on Kubernetes

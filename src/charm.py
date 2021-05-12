@@ -98,7 +98,7 @@ class MariadbCharm(CharmBase):
         leader_set({'root-password': root_password})
         self._stored.root_password = root_password
 
-        # Add intial Pebble config layer using the Pebble API
+        # Add Pebble config layer using the Pebble API
         container.add_layer("mariadb", pebble_layer, combine=True)
         # Autostart any services that were defined with startup: enabled
         container.autostart()

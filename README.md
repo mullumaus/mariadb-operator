@@ -1,4 +1,4 @@
-# mariadb-operator
+# MariaDB-operator
 
 ## Description
 
@@ -7,13 +7,13 @@ MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
 ## Usage
 
 ### Deploying
-    $git clone https://github.com/mullumaus/mariadb-operator
-    $cd mariadb-operator
+    $ git clone https://github.com/mullumaus/mariadb-operator
+    $ cd mariadb-operator
     $ charmcraft pack
     Created 'mariadb.charm'.
     $juju deploy ./mariadb.charm --resource mariadb-image=mariadb
 
-    $  juju status
+    $ juju status
     Model        Controller  Cloud/Region        Version  SLA          Timestamp
     development  micro       microk8s/localhost  2.9.0    unsupported  20:52:16+10:00
 
@@ -48,11 +48,15 @@ operator behaviour without full deployment. Just `run_tests`:
 
     ./run_tests
 
+## OCI Image source 
+
+https://hub.docker.com/_/mariadb
+
 # Roadmap
 
 The MariaDB Charm is still a work in progress.
 
-Here are some of the things coming soon:
+Here are some of the future features:
 
   - [x] Allow to backup/restore database
   - [x] Use keystone for authentication

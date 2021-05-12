@@ -27,6 +27,11 @@ from ops.model import (
 from ops.pebble import ServiceStatus, Layer
 from oci_image import OCIImageResource, OCIImageResourceError
 from mariadbserver import MariaDB, ROOT_USER, PORT
+from charmhelpers.core import host
+from charmhelpers.core.hookenv import (
+    leader_set,
+    # is_leader,
+)
 # from charms.osm.k8s import is_pod_up, get_service_ip
 # from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 
@@ -39,7 +44,7 @@ class MariadbCharm(CharmBase):
     """Charm the service."""
 
     _stored = StoredState()
-
+    _root_password = None
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -50,6 +55,8 @@ class MariadbCharm(CharmBase):
         self.framework.observe(self.on.restart_action, self._on_restart_action)
         self.framework.observe(self.on["database"].relation_changed,
                                self._on_database_relation_changed)
+        if self._root_password is None:
+            self._root_password = self._gen_root_password()
         # self.ingress = IngressRequires(
         #     self,
         #     {
@@ -85,11 +92,12 @@ class MariadbCharm(CharmBase):
                     "command": COMMAND,
                     "startup": "enabled",
                     "environment": {
-                            "MYSQL_ROOT_PASSWORD": self.model.config['root-password'],
+                            "MYSQL_ROOT_PASSWORD": self._root_password,
                         },
                 }
             },
         }
+        leader_set({'root-password': self._root_password})
         # Add intial Pebble config layer using the Pebble API
         container.add_layer("mariadb", pebble_layer, combine=True)
         # Autostart any services that were defined with startup: enabled
@@ -119,6 +127,9 @@ class MariadbCharm(CharmBase):
 
     def _on_database_relation_changed(self,event):
         event.relation.data[self.unit]['root-password'] = self.model.config['root-password']
+
+    def _gen_root_password(self):
+        return host.pwgen(40)
 
     def _on_update_status(self, event):
         """Set status for all units

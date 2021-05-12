@@ -32,6 +32,7 @@ from charmhelpers.core.hookenv import (
     leader_set,
     leader_get,
 )
+
 # from charms.osm.k8s import is_pod_up, get_service_ip
 # from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 
@@ -40,10 +41,18 @@ logger = logging.getLogger(__name__)
 SERVICE = "mariadb"
 COMMAND = "/usr/local/bin/docker-entrypoint.sh mysqld"
 
+
 class MariadbCharm(CharmBase):
-    """Charm the service."""
+    """A Juju Charm to deploy MariaDB on Kubernetes
+
+    This charm has the following features:
+    - Add one more MariaDB units
+    - Config port of MariaDB
+    - Provides a database relation for any MariaDB client
+    """
 
     _stored = StoredState()
+
     def __init__(self, *args):
         super().__init__(*args)
 
@@ -52,34 +61,21 @@ class MariadbCharm(CharmBase):
         self.framework.observe(self.on.mariadb_pebble_ready, self._on_mariadb_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.restart_action, self._on_restart_action)
+        self.framework.observe(self.on.backup_action, self._on_backup_action)
+        self.framework.observe(self.on.update_status, self._on_update_status)
         self.framework.observe(self.on["database"].relation_changed,
                                self._on_database_relation_changed)
-            
-        # self.ingress = IngressRequires(
-        #     self,
-        #     {
-        #         "service-hostname": self.model.config["external_hostname"],
-        #         "service-name": self.app.name,
-        #         "service-port": PORT,
-        #     },
-        # )
-    
 
         self._stored.set_default(database={})
+        self._stored.set_default(root_password=None)
 
     def _on_mariadb_pebble_ready(self, event):
-        """Define and start a workload using the Pebble API.
-
-        TEMPLATE-TODO: change this example to suit your needs.
-        You'll need to specify the right entrypoint and environment
-        configuration for your specific workload. Tip: you can see the
-        standard entrypoint of an existing container using docker inspect
-
-        Learn more about Pebble layers at https://github.com/canonical/pebble
-        """
         # Get a reference the container attribute on the PebbleReadyEvent
         container = event.workload
+
+        # generate root password
         root_password = self._gen_root_password()
+
         # Define an initial Pebble layer configuration
         pebble_layer = {
             "summary": "mariadb layer",
@@ -91,41 +87,39 @@ class MariadbCharm(CharmBase):
                     "command": COMMAND,
                     "startup": "enabled",
                     "environment": {
-                            "MYSQL_ROOT_PASSWORD": root_password,
-                        },
+                        "MYSQL_ROOT_PASSWORD": root_password,
+                    },
                 }
             },
         }
-        
+        # store password
         leader_set({'root-password': root_password})
+        self._stored.root_password = root_password
+
         # Add intial Pebble config layer using the Pebble API
         container.add_layer("mariadb", pebble_layer, combine=True)
         # Autostart any services that were defined with startup: enabled
         container.autostart()
-        # Learn more about statuses in the SDK docs:
-        # https://juju.is/docs/sdk/constructs#heading--statuses
         self.unit.status = ActiveStatus()
 
     def _on_config_changed(self, event):
-        """Just an example to show how to deal with changed configuration.
+        """Configure MariaDB Pod specification
 
-        TEMPLATE-TODO: change this example to suit your needs.
-        If you don't need to handle config, you can remove this method,
-        the hook created in __init__.py for it, the corresponding test,
-        and the config.py file.
-
-        Learn more about config at https://juju.is/docs/sdk/config
+        A new MariaDB pod specification is set only if it is different
+        from the current specification.
         """
         # Continue only if the unit is the leader
         if not self.unit.is_leader():
             self._on_update_status(event)
             return
-
+        # Build Pod spec
         pod_spec = self._make_pod_spec()
+
+        # Applying pod spec. If the spec hasn't changed, this has no effect.
         self.model.pod.set_spec(pod_spec)
         self._on_update_status(event)
 
-    def _on_database_relation_changed(self,event):
+    def _on_database_relation_changed(self, event):
         event.relation.data[self.unit]['root-password'] = leader_get("root-password")
 
     def _gen_root_password(self):
@@ -144,7 +138,7 @@ class MariadbCharm(CharmBase):
             return
 
         self.unit.status = ActiveStatus()
-        
+
     def _make_pod_spec(self):
         try:
             image_details = self.image.fetch()
@@ -153,7 +147,7 @@ class MariadbCharm(CharmBase):
             logger.exception("An error occurred while fetching the image info")
             self.unit.status = BlockedStatus("Error fetching image information")
             return {}
-        
+
         ports = [
             {"name": "mariadb", "containerPort": self.model.config['port'], "protocol": "TCP"},
         ]
@@ -218,19 +212,21 @@ class MariadbCharm(CharmBase):
     ##############################################
 
     def _on_restart_action(self, event):
-        """Just an example to show how to receive actions.
-
-        TEMPLATE-TODO: change this example to suit your needs.
-        If you don't need to handle actions, you can remove this method,
-        the hook created in __init__.py for it, the corresponding test,
-        and the actions.py file.
-
-        Learn more about actions at https://juju.is/docs/sdk/actions
+        """restart mariadb
         """
         self._restart_mariadb()
+
+    def _on_backup_action(self, event):
+        """ Backup database
+        """
+        backup_path = "/var/lib/mysql"
+        password = self._stored.root_password
+        # backup_cmd = "mysqldump -u root -p$ROOT_PASSWORD --single-transaction --all-databases | gzip > $DB_BACKUP_PATH/backup.sql.gz || action-fail "Backup failed""
+
     ##############################################
     #               PROPERTIES                   #
     ##############################################
+
 
 if __name__ == "__main__":
     main(MariadbCharm)

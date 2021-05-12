@@ -24,7 +24,7 @@ from ops.model import (
     MaintenanceStatus,
     ModelError
 )
-from ops.pebble import ServiceStatus, Layer
+from ops.pebble import ServiceStatus
 from oci_image import OCIImageResource, OCIImageResourceError
 from charmhelpers.core import host
 from charmhelpers.core.hookenv import (
@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 
 SERVICE = "mariadb"
 COMMAND = "/usr/local/bin/docker-entrypoint.sh mysqld"
+
 
 class MariadbCharm(CharmBase):
     """A Juju Charm to deploy MariaDB on Kubernetes
@@ -56,11 +57,14 @@ class MariadbCharm(CharmBase):
 
         self.image = OCIImageResource(self, "mariadb-image")
 
-        self.framework.observe(self.on.mariadb_pebble_ready, self._on_mariadb_pebble_ready)
+        self.framework.observe(self.on.mariadb_pebble_ready, 
+                    self._on_mariadb_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.restart_action, self._on_restart_action)
         self.framework.observe(self.on.backup_action, self._on_backup_action)
         self.framework.observe(self.on.update_status, self._on_update_status)
+        self.framework.observe(self.on["peer"].relation_joined, self._on_config_changed)
+        self.framework.observe(self.on["peer"].relation_departed, self._on_config_changed)        
         self.framework.observe(self.on["database"].relation_changed,
                                self._on_database_relation_changed)
 
@@ -219,7 +223,8 @@ class MariadbCharm(CharmBase):
         """
         backup_path = "/var/lib/mysql"
         password = self._stored.root_password
-        # backup_cmd = "mysqldump -u root -p$ROOT_PASSWORD --single-transaction --all-databases | gzip > $DB_BACKUP_PATH/backup.sql.gz || action-fail "Backup failed""
+        # backup_cmd = "mysqldump -u root -p$ROOT_PASSWORD --single-transaction 
+        # --all-databases | gzip > $DB_BACKUP_PATH/backup.sql.gz || action-fail "Backup failed""
 
     ##############################################
     #               PROPERTIES                   #

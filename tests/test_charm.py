@@ -9,7 +9,7 @@ from unittest.mock import Mock
 from charm import MariadbCharm
 from ops.model import ActiveStatus
 from ops.testing import Harness
-
+from charm import COMMAND
 
 class TestCharm(unittest.TestCase):
     def setUp(self):
@@ -19,8 +19,8 @@ class TestCharm(unittest.TestCase):
 
     def test_config_changed(self):
         self.assertEqual(list(self.harness.charm._stored.ports), [])
-        self.harness.update_config({"port": "foo"})
-        self.assertEqual(list(self.harness.charm._stored.ports), ["foo"])
+        self.harness.update_config({"port": 4000})
+        self.assertEqual(list(self.harness.charm._stored.ports), [4000])
 
     def test_action(self):
         # the harness doesn't (yet!) help much with actions themselves
@@ -45,9 +45,11 @@ class TestCharm(unittest.TestCase):
                 "mariadb": {
                     "override": "replace",
                     "summary": "mariadb",
-                    "command": "gunicorn -b 0.0.0.0:80 mariadb:app -k gevent",
+                    "command": COMMAND,
                     "startup": "enabled",
-                    "environment": {"port": "🎁"},
+                    "environment": {
+                        "MYSQL_ROOT_PASSWORD": "test_password",
+                    },
                 }
             },
         }

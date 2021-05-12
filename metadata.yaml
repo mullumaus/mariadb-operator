@@ -23,4 +23,4 @@ containers:
 resources:
   mariadb-image:
     type: oci-image
-    description: OCI image for mariadb (kennethreitz/mariadb)
+    description: OCI image for mariadb (mariadb)

@@ -18,7 +18,7 @@ class TestCharm(unittest.TestCase):
         self.harness.begin()
 
     def test_config_changed(self):
-        self.assertEqual(list(self.harness.charm._stored.ports), [])
+        self.assertEqual(list(self.harness.charm._stored.ports), [3306])
         self.harness.update_config({"port": 4000})
         self.assertEqual(list(self.harness.charm._stored.ports), [4000])
 

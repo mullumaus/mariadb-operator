@@ -19,7 +19,6 @@ from ops.framework import StoredState
 from ops.main import main
 from ops.model import (
     ActiveStatus,
-    # BlockedStatus,
     WaitingStatus,
     MaintenanceStatus,
     ModelError
@@ -29,7 +28,6 @@ import secrets
 import string
 
 # from charms.osm.k8s import is_pod_up, get_service_ip
-# from charms.nginx_ingress_integrator.v0.ingress import IngressRequires
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +48,6 @@ class MariadbCharm(CharmBase):
 
     def __init__(self, *args):
         super().__init__(*args)
-
-        # self.image = OCIImageResource(self, "mariadb-image")
-
         self.framework.observe(self.on.mariadb_pebble_ready,
                                self._on_mariadb_pebble_ready)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
@@ -66,7 +61,7 @@ class MariadbCharm(CharmBase):
 
         self._stored.set_default(database={})
         self._stored.set_default(root_password=self._gen_root_password())
-        self._stored.set_default(ports=[])
+        self._stored.set_default(ports=[self.model.config['port']])
 
     def _on_mariadb_pebble_ready(self, event):
         # Get a reference the container attribute on the PebbleReadyEvent

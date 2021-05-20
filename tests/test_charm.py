@@ -22,19 +22,6 @@ class TestCharm(unittest.TestCase):
         self.harness.update_config({"port": 4000})
         self.assertEqual(list(self.harness.charm._stored.ports), [4000])
 
-    # def test_action(self):
-    #     # the harness doesn't (yet!) help much with actions themselves
-    #     action_event = Mock(params={"fail": ""})
-    #     self.harness.charm._on_restart_action(action_event)
-
-    #     self.assertTrue(action_event.set_results.called)
-
-    # def test_action_fail(self):
-    #     action_event = Mock(params={"fail": "fail this"})
-    #     self.harness.charm._on_restart_action(action_event)
-
-    #     self.assertEqual(action_event.fail.call_args, [("fail this",)])
-
     def test_mariadb_pebble_ready(self):
         # Check the initial Pebble plan is empty
         initial_plan = self.harness.get_container_pebble_plan("mariadb")

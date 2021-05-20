@@ -102,6 +102,8 @@ class MariadbCharm(CharmBase):
         event.relation.data[self.unit]['root-password'] = self._stored.root_password
 
     def _gen_root_password(self):
+        """generate mariadb root password
+        """
         alphabet = string.ascii_letters + string.digits
         password = ''.join(secrets.choice(alphabet) for i in range(16))
         return password
@@ -120,14 +122,17 @@ class MariadbCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _is_ready(self):
+        """check service is running
+        """
         container = self.unit.get_container(SERVICE)
         return container.get_service(SERVICE).is_running()
 
     ##############################################
     #               Actions                      #
     ##############################################
-
     def _on_restart_action(self, event):
+        """restart mariadb service
+        """
         logger.info("Restarting mariadb ...")
         print("event{}".format(event))
         try:
@@ -153,10 +158,6 @@ class MariadbCharm(CharmBase):
     #     password = self._stored.root_password
         # backup_cmd = "mysqldump -u root -p$ROOT_PASSWORD --single-transaction
         # --all-databases | gzip > $DB_BACKUP_PATH/backup.sql.gz || action-fail "Backup failed""
-
-    ##############################################
-    #               PROPERTIES                   #
-    ##############################################
 
 
 if __name__ == "__main__":

@@ -1,13 +1,17 @@
 # MariaDB-operator
 
 ## Description
+MariaDB Server is one of the most popular open source relational databases. It’s made by the original developers of MySQL. It is part of most cloud offerings and the default in most Linux distributions.
+It is built upon the values of performance, stability, and openness. MariaDB intended to maintain high compatibility with MySQL, ensuring a drop-in replacement capability with library binary parity and exact matching with MySQL APIs and commands. However, new features diverge more. 
+
+It includes new storage engines like Aria, ColumnStore, and MyRocks. Recent new functionality includes advanced clustering with Galera Cluster 4, compatibility features with Oracle Database and Temporal Data Tables, allowing one to query the data as it stood at any point in the past.
 
 MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
 
     This charm has the following features:
     - Add one more MariaDB units
     - Config port of MariaDB
-    - Provides a database relation for any MariaDB client
+    - Provide a database relation for any MariaDB client
 
 ## Usage
 

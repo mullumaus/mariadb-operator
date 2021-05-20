@@ -5,11 +5,11 @@
 
 import unittest
 from unittest.mock import Mock
-
 from charm import MariadbCharm
 from ops.model import ActiveStatus
 from ops.testing import Harness
 from charm import COMMAND
+
 
 class TestCharm(unittest.TestCase):
     def setUp(self):
@@ -22,18 +22,18 @@ class TestCharm(unittest.TestCase):
         self.harness.update_config({"port": 4000})
         self.assertEqual(list(self.harness.charm._stored.ports), [4000])
 
-    def test_action(self):
-        # the harness doesn't (yet!) help much with actions themselves
-        action_event = Mock(params={"fail": ""})
-        self.harness.charm._on_restart_action(action_event)
+    # def test_action(self):
+    #     # the harness doesn't (yet!) help much with actions themselves
+    #     action_event = Mock(params={"fail": ""})
+    #     self.harness.charm._on_restart_action(action_event)
 
-        self.assertTrue(action_event.set_results.called)
+    #     self.assertTrue(action_event.set_results.called)
 
-    def test_action_fail(self):
-        action_event = Mock(params={"fail": "fail this"})
-        self.harness.charm._on_restart_action(action_event)
+    # def test_action_fail(self):
+    #     action_event = Mock(params={"fail": "fail this"})
+    #     self.harness.charm._on_restart_action(action_event)
 
-        self.assertEqual(action_event.fail.call_args, [("fail this",)])
+    #     self.assertEqual(action_event.fail.call_args, [("fail this",)])
 
     def test_mariadb_pebble_ready(self):
         # Check the initial Pebble plan is empty
@@ -48,7 +48,7 @@ class TestCharm(unittest.TestCase):
                     "command": COMMAND,
                     "startup": "enabled",
                     "environment": {
-                        "MYSQL_ROOT_PASSWORD": "test_password",
+                        "MYSQL_ROOT_PASSWORD": self.harness.charm._stored.root_password,
                     },
                 }
             },
@@ -60,9 +60,24 @@ class TestCharm(unittest.TestCase):
         # Get the plan now we've run PebbleReady
         updated_plan = self.harness.get_container_pebble_plan("mariadb").to_dict()
         # Check we've got the plan we expected
+        print("\nupdated_plan={}".format(updated_plan))
+        print("\nexpected_plan={}".format(expected_plan))
         self.assertEqual(expected_plan, updated_plan)
         # Check the service was started
         service = self.harness.model.unit.get_container("mariadb").get_service("mariadb")
         self.assertTrue(service.is_running())
         # Ensure we set an ActiveStatus with no message
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
+
+    def test_action(self):
+        # the harness doesn't (yet!) help much with actions themselves
+        action_event = Mock(params={"fail": ""})
+        self.harness.charm._on_restart_action(action_event)
+
+        self.assertTrue(action_event.set_results.called)
+
+    def test_action_fail(self):
+        action_event = Mock(params={"fail": "fail this"})
+        self.harness.charm._on_restart_action(action_event)
+
+        self.assertEqual(action_event.fail.call_args, [("fail this",)])

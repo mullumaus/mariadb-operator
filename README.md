@@ -4,6 +4,11 @@
 
 MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
 
+    This charm has the following features:
+    - Add one more MariaDB units
+    - Config port of MariaDB
+    - Provides a database relation for any MariaDB client
+
 ## Usage
 
 ### Deploying

@@ -7,16 +7,16 @@ summary: |
   MariaDB is developed as open source software and as a 
   relational database it provides an SQL interface for accessing data. 
 
-storage:
-  db:
-    type: filesystem
-    location: /data/db
+# storage:
+#   db:
+#     type: filesystem
+#     location: /data/db
 provides:
   database:
     interface: mysql
 peers:
   peer:
-    interface: peer    
+    interface: peer
 containers:
   mariadb:
     resource: mariadb-image

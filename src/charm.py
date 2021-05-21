@@ -26,6 +26,7 @@ from ops.model import (
 from ops.pebble import ServiceStatus
 import secrets
 import string
+import subprocess
 
 # from charms.osm.k8s import is_pod_up, get_service_ip
 
@@ -60,8 +61,8 @@ class MariadbCharm(CharmBase):
                                self._on_database_relation_changed)
 
         self._stored.set_default(database={})
-        self._stored.set_default(root_password=self._gen_root_password())
         self._stored.set_default(ports=[self.model.config['port']])
+        self._stored.root_password = self._gen_root_password()
 
     def _on_mariadb_pebble_ready(self, event):
         # Get a reference the container attribute on the PebbleReadyEvent
@@ -122,10 +123,13 @@ class MariadbCharm(CharmBase):
         self.unit.status = ActiveStatus()
 
     def _is_ready(self):
-        """check service is running
+        """check if service is running
         """
-        container = self.unit.get_container(SERVICE)
-        return container.get_service(SERVICE).is_running()
+        try:
+            container = self.unit.get_container(SERVICE)
+            return container.get_service(SERVICE).is_running()
+        except ModelError:
+            return False
 
     ##############################################
     #               Actions                      #
@@ -134,7 +138,6 @@ class MariadbCharm(CharmBase):
         """restart mariadb service
         """
         logger.info("Restarting mariadb ...")
-        print("event{}".format(event))
         try:
             container = self.unit.get_container(SERVICE)
             status = container.get_service(SERVICE)
@@ -148,16 +151,23 @@ class MariadbCharm(CharmBase):
         except ModelError:
             event.fail(event.params['fail'])
             event.set_results(event.params)
-            return False
 
     def _on_backup_action(self, event):
-        pass
-    #     """ Backup database
-    #     """
-    #     backup_path = "/var/lib/mysql"
-    #     password = self._stored.root_password
-        # backup_cmd = "mysqldump -u root -p$ROOT_PASSWORD --single-transaction
-        # --all-databases | gzip > $DB_BACKUP_PATH/backup.sql.gz || action-fail "Backup failed""
+        """ Backup database
+        """
+        # backup_path = "/var/lib/mysql"
+        backup_path = "/tmp/"
+        password = self._stored.root_password
+        backup_cmd = """mysqldump -uroot -p{}  --single-transaction \
+                    --all-databases | gzip - > {}/backup.sql.gz
+                    """.format(password, backup_path)
+        try:
+            result = subprocess.check_output(backup_cmd,
+                                             stderr=subprocess.STDOUT, shell=True)
+            event.set_results(result)
+        except subprocess.CalledProcessError as e:
+            event.fail(e.output)
+            event.set_results(e.output)
 
 
 if __name__ == "__main__":

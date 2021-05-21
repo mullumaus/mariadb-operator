@@ -47,8 +47,6 @@ class TestCharm(unittest.TestCase):
         # Get the plan now we've run PebbleReady
         updated_plan = self.harness.get_container_pebble_plan("mariadb").to_dict()
         # Check we've got the plan we expected
-        print("\nupdated_plan={}".format(updated_plan))
-        print("\nexpected_plan={}".format(expected_plan))
         self.assertEqual(expected_plan, updated_plan)
         # Check the service was started
         service = self.harness.model.unit.get_container("mariadb").get_service("mariadb")
@@ -60,7 +58,7 @@ class TestCharm(unittest.TestCase):
         # the harness doesn't (yet!) help much with actions themselves
         action_event = Mock(params={"fail": ""})
         self.harness.charm._on_restart_action(action_event)
-
+        self.harness.charm._on_backup_action(action_event)
         self.assertTrue(action_event.set_results.called)
 
     def test_action_fail(self):

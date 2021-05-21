@@ -7,4 +7,4 @@ restart:
   description: Restart mariadb
   
 backup:
-  description: "Perform a backup"
+  description: Perform a backup

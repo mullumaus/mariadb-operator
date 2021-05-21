@@ -58,7 +58,7 @@ class TestCharm(unittest.TestCase):
         # the harness doesn't (yet!) help much with actions themselves
         action_event = Mock(params={"fail": ""})
         self.harness.charm._on_restart_action(action_event)
-        self.harness.charm._on_backup_action(action_event)
+        # self.harness.charm._on_backup_action(action_event)
         self.assertTrue(action_event.set_results.called)
 
     def test_action_fail(self):

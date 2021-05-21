@@ -7,4 +7,14 @@ restart:
   description: Restart mariadb
   
 backup:
-  description: Perform a backup
+  description: Perform a database backup
+
+restore:
+  description: Perform a database restore
+  params:
+    path:
+      description: |
+        The name backup file to restore, e.g.
+        20210521-123532-backup.sql.gz
+      type: string
+      default: ""

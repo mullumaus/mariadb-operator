@@ -27,13 +27,13 @@ from ops.pebble import ServiceStatus
 import secrets
 import string
 import subprocess
-
-# from charms.osm.k8s import is_pod_up, get_service_ip
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 SERVICE = "mariadb"
 COMMAND = "/usr/local/bin/docker-entrypoint.sh mysqld"
+DB_BACKUP_PATH = "/data/db"
 
 
 class MariadbCharm(CharmBase):
@@ -51,9 +51,11 @@ class MariadbCharm(CharmBase):
         super().__init__(*args)
         self.framework.observe(self.on.mariadb_pebble_ready,
                                self._on_mariadb_pebble_ready)
+        self.framework.observe(self.on.install, self._on_install)
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.restart_action, self._on_restart_action)
         self.framework.observe(self.on.backup_action, self._on_backup_action)
+        self.framework.observe(self.on.restore_action, self._on_restore_action)
         self.framework.observe(self.on.update_status, self._on_update_status)
         self.framework.observe(self.on["peer"].relation_joined, self._on_config_changed)
         self.framework.observe(self.on["peer"].relation_departed, self._on_config_changed)
@@ -62,11 +64,12 @@ class MariadbCharm(CharmBase):
 
         self._stored.set_default(database={})
         self._stored.set_default(ports=[self.model.config['port']])
-        self._stored.root_password = self._gen_root_password()
+        self._stored.set_default(root_password=self._gen_root_password())
 
     def _on_mariadb_pebble_ready(self, event):
         # Get a reference the container attribute on the PebbleReadyEvent
         container = event.workload
+        # self._stored.root_password = self._gen_root_password()
         # Define an initial Pebble layer configuration
         pebble_layer = {
             "summary": "mariadb layer",
@@ -89,6 +92,10 @@ class MariadbCharm(CharmBase):
         # Autostart any services that were defined with startup: enabled
         container.autostart()
         self.unit.status = ActiveStatus()
+
+    def _on_install(self, event):
+        subprocess.check_call(['apt-get', 'update'])
+        subprocess.check_call(["apt-get", "install", "-y", "mysql-client"])
 
     def _on_config_changed(self, event):
         """Configure MariaDB Pod specification
@@ -131,6 +138,18 @@ class MariadbCharm(CharmBase):
         except ModelError:
             return False
 
+    def _get_ip(self):
+        """
+        """
+        try:
+            # addr = str(self.model.get_binding(event.relation).network.bind_address)
+            addr = subprocess.check_output(["unit-get",
+                                           "private-address"]).decode().strip()
+            # addr = hookenv.unit_private_ip()
+            return addr
+        except ModelError:
+            return None
+
     ##############################################
     #               Actions                      #
     ##############################################
@@ -155,19 +174,48 @@ class MariadbCharm(CharmBase):
     def _on_backup_action(self, event):
         """ Backup database
         """
-        # backup_path = "/var/lib/mysql"
-        backup_path = "/tmp/"
+        date_str = datetime.now().strftime("%Y%m%d-%H%M%S")
+        backup_name = "{}/{}-backup.sql.gz".format(DB_BACKUP_PATH, date_str)
         password = self._stored.root_password
-        backup_cmd = """mysqldump -uroot -p{}  --single-transaction \
-                    --all-databases | gzip - > {}/backup.sql.gz
-                    """.format(password, backup_path)
+        subprocess.check_output("mkdir -p {}".format(DB_BACKUP_PATH),
+                                stderr=subprocess.STDOUT, shell=True)
+        ip = self._get_ip()
+
+        backup_cmd = """mysqldump -uroot -p{} -h{} --single-transaction \
+                    --all-databases | gzip - > {}
+                    """.format(password, ip, backup_name)
+        # logger.info(backup_cmd)
         try:
-            result = subprocess.check_output(backup_cmd,
-                                             stderr=subprocess.STDOUT, shell=True)
-            event.set_results(result)
+            subprocess.check_output(backup_cmd,
+                                    stderr=subprocess.STDOUT, shell=True)
+            message = {"message": "backup {}".format(backup_name)}
+            event.set_results(message)
         except subprocess.CalledProcessError as e:
             event.fail(e.output)
-            event.set_results(e.output)
+            message = {"message": e.output}
+            event.set_results(message)
+            logger.error(e.output)
+
+    def _on_restore_action(self, event):
+        """Restore database
+        """
+        try:
+            file = subprocess.check_output(["action-get",
+                                            "path"]).decode().strip()
+            restore_file = "{}/{}".format(DB_BACKUP_PATH, file)
+            ip = self._get_ip()
+            password = self._stored.root_password
+            command = "gunzip -c {}| mysql -uroot -p{} -h{}".format(restore_file, password, ip)
+            # logger.info(command)
+            subprocess.check_output(command,
+                                    stderr=subprocess.STDOUT, shell=True)
+            message = {"message": "restore {}".format(restore_file)}
+            event.set_results(message)
+        except subprocess.CalledProcessError as e:
+            event.fail(e.output)
+            message = {"message": e.output}
+            event.set_results(message)
+            logger.error(e.output)
 
 
 if __name__ == "__main__":

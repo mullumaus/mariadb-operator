@@ -14,7 +14,10 @@ restore:
   params:
     path:
       description: |
-        The name backup file to restore, e.g.
-        20210521-123532-backup.sql.gz
+        The backup file name to restore, e.g.20210521-123532-backup.sql.gz. 
+        If not specified, the latest backup will be resotre
       type: string
       default: ""
+
+listbackup:
+  description: To list all backup files

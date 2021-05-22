@@ -28,6 +28,8 @@ import secrets
 import string
 import subprocess
 from datetime import datetime
+import glob
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,7 @@ class MariadbCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.restart_action, self._on_restart_action)
         self.framework.observe(self.on.backup_action, self._on_backup_action)
+        self.framework.observe(self.on.listbackup_action, self._on_list_backup)
         self.framework.observe(self.on.restore_action, self._on_restore_action)
         self.framework.observe(self.on.update_status, self._on_update_status)
         self.framework.observe(self.on["peer"].relation_joined, self._on_config_changed)
@@ -145,7 +148,6 @@ class MariadbCharm(CharmBase):
             # addr = str(self.model.get_binding(event.relation).network.bind_address)
             addr = subprocess.check_output(["unit-get",
                                            "private-address"]).decode().strip()
-            # addr = hookenv.unit_private_ip()
             return addr
         except ModelError:
             return None
@@ -196,20 +198,37 @@ class MariadbCharm(CharmBase):
             event.set_results(message)
             logger.error(e.output)
 
+    def _on_list_backup(self, event):
+        try:
+            output = subprocess.check_output("ls {}".format(DB_BACKUP_PATH),
+                                             stderr=subprocess.STDOUT, shell=True)
+            output = output.decode().strip().split("\n")
+            message = {"message": "backup files: {}".format(output)}
+            event.set_results(message)
+        except subprocess.CalledProcessError as e:
+            event.fail(e.output)
+            message = {"message": e.output}
+            event.set_results(message)
+            logger.error(e.output)
+
     def _on_restore_action(self, event):
         """Restore database
         """
         try:
             file = subprocess.check_output(["action-get",
                                             "path"]).decode().strip()
-            restore_file = "{}/{}".format(DB_BACKUP_PATH, file)
+            if file is None or len(file) == 0:
+                list_of_files = glob.glob('{}/*'.format(DB_BACKUP_PATH))
+                restore_file = max(list_of_files, key=os.path.getctime)
+            else:
+                restore_file = "{}/{}".format(DB_BACKUP_PATH, file)
             ip = self._get_ip()
             password = self._stored.root_password
             command = "gunzip -c {}| mysql -uroot -p{} -h{}".format(restore_file, password, ip)
             # logger.info(command)
             subprocess.check_output(command,
                                     stderr=subprocess.STDOUT, shell=True)
-            message = {"message": "restore {}".format(restore_file)}
+            message = {"message": "restored {}".format(restore_file)}
             event.set_results(message)
         except subprocess.CalledProcessError as e:
             event.fail(e.output)

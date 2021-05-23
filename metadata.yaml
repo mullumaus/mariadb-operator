@@ -1,4 +1,4 @@
-name: mariadb-operator
+name: mariadb
 description: |
   A Juju charm deploying and managing MariaDB on Kubernetes.
 summary: |

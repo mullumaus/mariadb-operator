@@ -69,7 +69,6 @@ class MariadbCharm(CharmBase):
     def _on_mariadb_pebble_ready(self, event):
         # Get a reference the container attribute on the PebbleReadyEvent
         container = event.workload
-        # self._stored.root_password = self._gen_root_password()
         # Define an initial Pebble layer configuration
         pebble_layer = {
             "summary": "mariadb layer",

@@ -152,6 +152,12 @@ class MariadbCharm(CharmBase):
         except ModelError:
             return None
 
+    def _set_fail_message(self, event, msg):
+        if event.params['fail'] is None:
+            event.params['fail'] = msg
+        event.fail(event.params['fail'])
+        event.set_results(event.params)
+
     ##############################################
     #               Actions                      #
     ##############################################
@@ -169,9 +175,8 @@ class MariadbCharm(CharmBase):
             container.start(SERVICE)
             self.unit.status = ActiveStatus("mariadb restarted")
             event.set_results(event.params)
-        except ModelError:
-            event.fail(event.params['fail'])
-            event.set_results(event.params)
+        except ModelError as e:
+            self._set_fail_message(event, str(e))
 
     def _on_backup_action(self, event):
         """ Backup database
@@ -186,19 +191,18 @@ class MariadbCharm(CharmBase):
         backup_cmd = """mysqldump -uroot -p{} -h{} --single-transaction \
                     --all-databases | gzip - > {}
                     """.format(password, ip, backup_name)
-        # logger.info(backup_cmd)
         try:
             subprocess.check_output(backup_cmd,
                                     stderr=subprocess.STDOUT, shell=True)
             message = {"message": "backup {}".format(backup_name)}
             event.set_results(message)
         except subprocess.CalledProcessError as e:
-            event.fail(e.output)
-            message = {"message": e.output}
-            event.set_results(message)
+            self._set_fail_message(event, e.output)
             logger.error(e.output)
 
     def _on_list_backup(self, event):
+        """ List backup files
+        """
         try:
             output = subprocess.check_output("ls {}".format(DB_BACKUP_PATH),
                                              stderr=subprocess.STDOUT, shell=True)
@@ -206,10 +210,7 @@ class MariadbCharm(CharmBase):
             message = {"message": "backup files: {}".format(output)}
             event.set_results(message)
         except subprocess.CalledProcessError as e:
-            event.fail(e.output)
-            message = {"message": e.output}
-            event.set_results(message)
-            logger.error(e.output)
+            self._set_fail_message(event, e.output)
 
     def _on_restore_action(self, event):
         """Restore database
@@ -225,15 +226,12 @@ class MariadbCharm(CharmBase):
             ip = self._get_ip()
             password = self._stored.root_password
             command = "gunzip -c {}| mysql -uroot -p{} -h{}".format(restore_file, password, ip)
-            # logger.info(command)
             subprocess.check_output(command,
                                     stderr=subprocess.STDOUT, shell=True)
             message = {"message": "restored {}".format(restore_file)}
             event.set_results(message)
         except subprocess.CalledProcessError as e:
-            event.fail(e.output)
-            message = {"message": e.output}
-            event.set_results(message)
+            self._set_fail_message(event, e.output)
             logger.error(e.output)
 
 

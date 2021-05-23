@@ -54,15 +54,37 @@ class TestCharm(unittest.TestCase):
         # Ensure we set an ActiveStatus with no message
         self.assertEqual(self.harness.model.unit.status, ActiveStatus())
 
-    def test_action(self):
-        # the harness doesn't (yet!) help much with actions themselves
+    def test_restart_action(self):
+        # test restart action
         action_event = Mock(params={"fail": ""})
         self.harness.charm._on_restart_action(action_event)
-        # self.harness.charm._on_backup_action(action_event)
         self.assertTrue(action_event.set_results.called)
 
-    def test_action_fail(self):
+    def test_restart_action_fail(self):
         action_event = Mock(params={"fail": "fail this"})
         self.harness.charm._on_restart_action(action_event)
+
+        self.assertEqual(action_event.fail.call_args, [("fail this",)])
+
+    # @patch("subprocess.check_output")
+    # def test_restore_action(self, mock_check_output):
+    #     # test restore action
+    #     def mock_check_output(*a, **kw):
+    #         return "mock"
+    #     mock_check_output.return_value = 'mocked!'
+    #     subprocess.check_output = mock_check_output
+    #     action_event = Mock(params={"fail": ""})
+    #     self.harness.charm._on_restore_action(action_event)
+    #     self.assertTrue(action_event.set_results.called)
+
+    def test_list_action(self):
+        # test list backup action
+        action_event = Mock(params={"fail": ""})
+        self.harness.charm._on_list_backup(action_event)
+        self.assertTrue(action_event.set_results.called)
+
+    def test_list_action_fail(self):
+        action_event = Mock(params={"fail": "fail this"})
+        self.harness.charm._on_list_backup(action_event)
 
         self.assertEqual(action_event.fail.call_args, [("fail this",)])

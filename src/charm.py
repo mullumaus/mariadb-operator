@@ -142,7 +142,7 @@ class MariadbCharm(CharmBase):
             return False
 
     def _get_ip(self):
-        """
+        """Get unit IP address
         """
         try:
             # addr = str(self.model.get_binding(event.relation).network.bind_address)

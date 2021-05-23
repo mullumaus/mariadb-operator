@@ -2,9 +2,6 @@
 
 ## Description
 MariaDB Server is one of the most popular open source relational databases. It’s made by the original developers of MySQL. It is part of most cloud offerings and the default in most Linux distributions.
-It is built upon the values of performance, stability, and openness. MariaDB intended to maintain high compatibility with MySQL, ensuring a drop-in replacement capability with library binary parity and exact matching with MySQL APIs and commands. However, new features diverge more. 
-
-It includes new storage engines like Aria, ColumnStore, and MyRocks. Recent new functionality includes advanced clustering with Galera Cluster 4, compatibility features with Oracle Database and Temporal Data Tables, allowing one to query the data as it stood at any point in the past.
 
 MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
 
@@ -12,6 +9,11 @@ MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
     - Add one more MariaDB units
     - Config port of MariaDB
     - Provide a database relation for any MariaDB client
+    - Allow to config the port mariadb will be listening on
+    - To restart mariadb serviec
+    - To backup database
+    - To list database backups
+    - To restore database from a specified backup
 
 ## Usage
 
@@ -30,7 +32,47 @@ MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
     mariadb  mariadb  active      1  mariadb  local            31  kubernetes           
 
     Unit        Workload  Agent  Address     Ports  Message
-    mariadb/0*  active    idle   10.1.49.14        
+    mariadb/0*  active    idle   10.1.49.14    
+
+### Actions
+#### Backup database
+    $ juju run-action mariadb/0 backup --wait
+    unit-mariadb-0:
+    UnitId: mariadb/0
+    id: "111"
+    results:
+        message: backup /data/db/20210522-122411-backup.sql.gz
+    status: completed
+    timing:
+        completed: 2021-05-22 12:24:12 +0000 UTC
+        enqueued: 2021-05-22 12:24:12 +0000 UTC
+        started: 2021-05-22 12:24:12 +0000 UTC
+
+#### List database backups        
+    $ juju run-action mariadb/0  --wait listbackup
+    unit-mariadb-0:
+    UnitId: mariadb/0
+    id: "115"
+    results:
+        message: 'backup files: [''20210522-122245-backup.sql.gz'', ''20210522-122411-backup.sql.gz'']'
+    status: completed
+    timing:
+        completed: 2021-05-22 12:24:31 +0000 UTC
+        enqueued: 2021-05-22 12:24:28 +0000 UTC
+        started: 2021-05-22 12:24:30 +0000 UTC
+
+### Restore backup
+    $ juju run-action mariadb/0  --wait restore
+    unit-mariadb-0:
+    UnitId: mariadb/0
+    id: "113"
+    results:
+        message: restored /data/db/20210522-122411-backup.sql.gz
+    status: completed
+    timing:
+        completed: 2021-05-22 12:24:21 +0000 UTC
+        enqueued: 2021-05-22 12:24:19 +0000 UTC
+        started: 2021-05-22 12:24:21 +0000 UTC
 
 ## Developing
 

@@ -61,7 +61,7 @@ MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
         enqueued: 2021-05-22 12:24:28 +0000 UTC
         started: 2021-05-22 12:24:30 +0000 UTC
 
-### Restore backup
+#### Restore backup
     $ juju run-action mariadb/0  --wait restore
     unit-mariadb-0:
     UnitId: mariadb/0

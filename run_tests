@@ -1,6 +1,4 @@
 #!/bin/sh -e
-# Copyright 2021 lihuiguo
-# See LICENSE file for licensing details.
 
 if [ -z "$VIRTUAL_ENV" -a -d venv/ ]; then
     . venv/bin/activate

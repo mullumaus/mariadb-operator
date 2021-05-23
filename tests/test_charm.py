@@ -1,6 +1,3 @@
-# Copyright 2021 lihuiguo
-# See LICENSE file for licensing details.
-#
 # Learn more about testing at: https://juju.is/docs/sdk/testing
 
 import unittest

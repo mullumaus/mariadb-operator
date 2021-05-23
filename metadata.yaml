@@ -1,11 +1,8 @@
-# Copyright 2021 lihuiguo
-# See LICENSE file for licensing details.
-name: mariadb
+name: mariadb-operator
 description: |
   A Juju charm deploying and managing MariaDB on Kubernetes.
 summary: |
-  MariaDB is developed as open source software and as a 
-  relational database it provides an SQL interface for accessing data. 
+  A MariaDB operator charm for Kubernetes
 
 provides:
   database:

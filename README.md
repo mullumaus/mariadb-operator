@@ -10,7 +10,7 @@ MariaDB-operator charm deploying and managing MariaDB on Kubernetes.
     - Config port of MariaDB
     - Provide a database relation for any MariaDB client
     - Allow to config the port mariadb will be listening on
-    - To restart mariadb serviec
+    - To restart mariadb service
     - To backup database
     - To list database backups
     - To restore database from a specified backup

@@ -109,7 +109,7 @@ The MariaDB Charm is still a work in progress.
 
 Here are some of the future features:
 
-  - [] Allow to backup/restore database
-  - [] Use keystone for authentication
-  - [] Use hacluster for HA
+  - Allow to backup/restore database
+  - Use keystone for authentication
+  - Use hacluster for HA
   

@@ -14,5 +14,8 @@ restore:
       type: string
       default: ""
 
-listbackup:
+list-backup:
   description: To list all backup files
+
+get-root-password:
+  description:  Retrieves the root password

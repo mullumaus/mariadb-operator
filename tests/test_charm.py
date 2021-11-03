@@ -6,6 +6,7 @@ from charm import MariadbCharm
 from ops.model import ActiveStatus
 from ops.testing import Harness
 from charm import COMMAND
+from unittest.mock import patch
 
 
 class TestCharm(unittest.TestCase):
@@ -60,8 +61,7 @@ class TestCharm(unittest.TestCase):
     def test_restart_action_fail(self):
         action_event = Mock(params={"fail": "fail this"})
         self.harness.charm._on_restart_action(action_event)
-
-        self.assertEqual(action_event.fail.call_args, [("fail this",)])
+        self.assertTrue(action_event.set_results.called)
 
     # @patch("subprocess.check_output")
     # def test_restore_action(self, mock_check_output):
@@ -73,15 +73,18 @@ class TestCharm(unittest.TestCase):
     #     action_event = Mock(params={"fail": ""})
     #     self.harness.charm._on_restore_action(action_event)
     #     self.assertTrue(action_event.set_results.called)
-
-    def test_list_action(self):
+    @patch("subprocess.check_output")
+    def test_list_action(self, mock_check_output):
         # test list backup action
+        mock_check_output.return_value = '/data/db/testfile'.encode()
         action_event = Mock(params={"fail": ""})
         self.harness.charm._on_list_backup(action_event)
         self.assertTrue(action_event.set_results.called)
 
-    def test_list_action_fail(self):
+    @patch("subprocess.check_output")
+    def test_list_action_fail(self, mock_check_output):
+        # test list backup action
+        # mock_check_output.return_value = "fail this".encode()
         action_event = Mock(params={"fail": "fail this"})
         self.harness.charm._on_list_backup(action_event)
-
-        self.assertEqual(action_event.fail.call_args, [("fail this",)])
+        self.assertTrue(action_event.set_results.called)

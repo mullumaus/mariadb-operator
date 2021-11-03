@@ -26,7 +26,7 @@ import string
 import subprocess
 from datetime import datetime
 import glob
-import os
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +54,9 @@ class MariadbCharm(CharmBase):
         self.framework.observe(self.on.config_changed, self._on_config_changed)
         self.framework.observe(self.on.restart_action, self._on_restart_action)
         self.framework.observe(self.on.backup_action, self._on_backup_action)
-        self.framework.observe(self.on.listbackup_action, self._on_list_backup)
+        self.framework.observe(self.on.list_backup_action, self._on_list_backup)
         self.framework.observe(self.on.restore_action, self._on_restore_action)
+        self.framework.observe(self.on.get_root_password_action, self._on_get_root_password_action)
         self.framework.observe(self.on.update_status, self._on_update_status)
         self.framework.observe(self.on["peer"].relation_joined, self._on_config_changed)
         self.framework.observe(self.on["peer"].relation_departed, self._on_config_changed)
@@ -106,7 +107,12 @@ class MariadbCharm(CharmBase):
         self._on_update_status(event)
 
     def _on_database_relation_changed(self, event):
-        event.relation.data[self.unit]['root-password'] = self._stored.root_password
+        if not self.charm.unit.is_leader():
+            return
+        creds = {}
+        creds["root-password"] = self._stored.root_password
+        data = {"credentials": creds}
+        event.relation.data[self.charm.app]["data"] = json.dumps(data)
 
     def _gen_root_password(self):
         """generate mariadb root password
@@ -137,7 +143,7 @@ class MariadbCharm(CharmBase):
         except ModelError:
             return False
 
-    def _get_ip(self):
+    def _get_unit_ip(self):
         """Get unit IP address
         """
         try:
@@ -173,6 +179,7 @@ class MariadbCharm(CharmBase):
             event.set_results(event.params)
         except ModelError as e:
             self._set_fail_message(event, str(e))
+            event.fail(message=str(e))
 
     def _on_backup_action(self, event):
         """ Backup database
@@ -182,7 +189,7 @@ class MariadbCharm(CharmBase):
         password = self._stored.root_password
         subprocess.check_output("mkdir -p {}".format(DB_BACKUP_PATH),
                                 stderr=subprocess.STDOUT, shell=True)
-        ip = self._get_ip()
+        ip = self._get_unit_ip()
 
         backup_cmd = """mysqldump -uroot -p{} -h{} --single-transaction \
                     --all-databases | gzip - > {}
@@ -193,8 +200,9 @@ class MariadbCharm(CharmBase):
             message = {"message": "backup {}".format(backup_name)}
             event.set_results(message)
         except subprocess.CalledProcessError as e:
-            self._set_fail_message(event, e.output)
-            logger.error(e.output)
+            # self._set_fail_message(event, e.output)
+            logger.error(str(e))
+            event.fail(message=str(e))
 
     def _on_list_backup(self, event):
         """ List backup files
@@ -206,7 +214,9 @@ class MariadbCharm(CharmBase):
             message = {"message": "backup files: {}".format(output)}
             event.set_results(message)
         except subprocess.CalledProcessError as e:
-            self._set_fail_message(event, e.output)
+            # self._set_fail_message(event, e.output)
+            logger.error(str(e))
+            event.fail(message=str(e))
 
     def _on_restore_action(self, event):
         """Restore database
@@ -216,19 +226,31 @@ class MariadbCharm(CharmBase):
                                             "path"]).decode().strip()
             if file is None or len(file) == 0:
                 list_of_files = glob.glob('{}/*'.format(DB_BACKUP_PATH))
-                restore_file = max(list_of_files, key=os.path.getctime)
+                if len(list_of_files) == 0:
+                    err_str = "No backup file available"
+                    event.fail(message=err_str)
+                    return
+                # restore_file = max(list_of_files, key=os.path.getctime)
+                restore_file = sorted(list_of_files)[-1]
             else:
                 restore_file = "{}/{}".format(DB_BACKUP_PATH, file)
-            ip = self._get_ip()
+            ip = self._get_unit_ip()
             password = self._stored.root_password
-            command = "gunzip -c {}| mysql -uroot -p{} -h{}".format(restore_file, password, ip)
+            command = "gunzip -c {}| /usr/bin/mysql -uroot -p{} -h{}".format(restore_file, password, ip)
             subprocess.check_output(command,
                                     stderr=subprocess.STDOUT, shell=True)
             message = {"message": "restored {}".format(restore_file)}
             event.set_results(message)
         except subprocess.CalledProcessError as e:
-            self._set_fail_message(event, e.output)
+            # self._set_fail_message(event, e.output)
             logger.error(e.output)
+            event.fail(message=str(e))
+
+    def _on_get_root_password_action(self, event):
+        """Get root password
+        """
+        message = {"message": self._stored.root_password}
+        event.set_results(message)
 
 
 if __name__ == "__main__":

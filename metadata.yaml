@@ -1,18 +1,27 @@
-name: mariadb
+name: mariadb 
 description: |
   A Juju charm deploying and managing MariaDB on Kubernetes.
 summary: |
   A MariaDB operator charm for Kubernetes
+docs: https://discourse.charmhub.io/t/mariadb-operator-docs-index/4782
+
+storage:
+  backup:
+    type: filesystem
+    location: /data
 
 provides:
   database:
     interface: mysql
+
 peers:
   peer:
     interface: peer
+
 containers:
   mariadb:
     resource: mariadb-image
+
 resources:
   mariadb-image:
     type: oci-image
